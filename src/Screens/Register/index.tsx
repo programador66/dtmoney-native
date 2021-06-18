@@ -12,6 +12,7 @@ import {
   Fields,
   TransactionTypes,
 } from "./styles";
+import CategorySelect from "../../components/Form/CategorySelect";
 
 const Register: React.FC = () => {
   const [transactionType, setTransactionType] = useState("");
@@ -46,6 +47,8 @@ const Register: React.FC = () => {
               isActive={transactionType === "down"}
             />
           </TransactionTypes>
+
+          <CategorySelect title="Categoria" />
         </Fields>
 
         <Button title="Enviar" />
