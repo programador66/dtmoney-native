@@ -54,7 +54,7 @@ export const Amount = styled.Text<TypeProps>`
   font-size: ${RFValue(32)}px;
   color: ${({ theme, icon }) =>
     icon === "dollar-sign" ? theme.colors.shappe : theme.colors.text_dark};
-  margin-top: 38px;
+  margin-top: 8px;
 `;
 
 export const LastTransaction = styled.Text<TypeProps>`

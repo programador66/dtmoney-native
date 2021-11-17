@@ -18,7 +18,7 @@ const Routes: React.FC = () => {
         labelPosition: "beside-icon",
         style: {
           paddingVertical: Platform.OS === "ios" ? 20 : 0,
-          height: 88,
+          height: 60,
         },
       }}
     >

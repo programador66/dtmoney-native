@@ -9,7 +9,7 @@ interface TransactionsProps {
 export const Container = styled.View`
   background-color: ${({ theme }) => theme.colors.shappe};
   border-radius: 5px;
-  padding: 17px 24px;
+  padding: 15px 24px;
   margin-bottom: 16px;
 `;
 
