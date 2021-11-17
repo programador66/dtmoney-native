@@ -1,11 +1,13 @@
 import React, {useState, useEffect, useCallback} from "react";
 import HighlightCard from "../../components/HighlightCard";
+import {ActivityIndicator} from "react-native";
 import TransactionCard, {
   TransactionCardProps,
 } from "../../components/TransactionCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {useFocusEffect} from "@react-navigation/native";
+import { useTheme } from "styled-components";
 
 import {
   Container,
@@ -22,6 +24,7 @@ import {
   Title,
   TransactionsList,
   LogoutButton,
+  LoadContainer
 } from "./styles";
 
 export interface DataListProps extends TransactionCardProps {
@@ -30,6 +33,7 @@ export interface DataListProps extends TransactionCardProps {
 
 interface HighightProps {
   amount: string;
+  lastTransactions: string;
 }
 
 interface HighightData {
@@ -38,32 +42,26 @@ interface HighightData {
   total: HighightProps;
 }
 
-const hight = [
-  {
-    title: "Entradas",
-    amount: "R$ 17.400,00",
-    lastTransaction: "Última entrada dia 13 de abril",
-    icon: "arrow-up-circle",
-  },
-  {
-    title: "Saídas",
-    amount: "R$ 1.259,00",
-    lastTransaction: "Última entrada dia 03 de abril",
-    icon: "arrow-down-circle",
-  },
-  {
-    title: "Total",
-    amount: "R$ 16.141,00",
-    lastTransaction: "01 á 16 de abril",
-    icon: "dollar-sign",
-  },
-];
 
 const Dashboard: React.FC = () => {
+  const [isLoading, setIsLoading] = useState(true);
   const dataKey = "@gofinances:transaction";
+
+  const theme = useTheme();
 
   const [transactions, setTransactions ] = useState<DataListProps[]>([]);
   const [highightData, setHighightData] = useState<HighightData>( {} as HighightData);
+
+  function getlastTransactionDate(collection: DataListProps[], type: 'positive' | 'negative') {
+
+    const lastTransaction = new Date(Math.max.apply(Math, collection
+      .filter(transaction => transaction.type === 'positive')
+      .map(transaction => new Date (transaction.date).getTime())));
+
+      const lastTFormated = `${lastTransaction.getDate()} de ${lastTransaction.toLocaleString("pt-BR",{month: 'long'})}`
+
+      return lastTFormated;
+  }
 
   async function loadTransactions() {
     const response = await AsyncStorage.getItem(dataKey);
@@ -102,21 +100,31 @@ const Dashboard: React.FC = () => {
     });
 
     setTransactions(transactionsFormated);
+
+    const lastTransactionsEntries = getlastTransactionDate(transactions, 'positive');
+    const lastTransactionsExpensives = getlastTransactionDate(transactions, 'negative');
+    const totalInterval = `01 à ${lastTransactionsExpensives}`;
+
     const total = entriesTotal - expenseveTotal;
 
     setHighightData({
       entries: {
         amount: entriesTotal
-        .toLocaleString("pt-BR", {style: 'currency', currency: 'BRL'})
+        .toLocaleString("pt-BR", {style: 'currency', currency: 'BRL'}),
+        lastTransactions: `Última entrada ${lastTransactionsEntries}`
       },
       expensives: {
-        amount: expenseveTotal.toLocaleString("pt-BR", {style: 'currency', currency: 'BRL'})
+        amount: expenseveTotal.toLocaleString("pt-BR", {style: 'currency', currency: 'BRL'}),
+        lastTransactions:`Última saída ${lastTransactionsExpensives}` 
       },
       total: {
-        amount: total.toLocaleString("pt-BR", {style: 'currency', currency: 'BRL'})
+        amount: total.toLocaleString("pt-BR", {style: 'currency', currency: 'BRL'}),
+        lastTransactions: totalInterval
       }
       
     });
+
+    setIsLoading(false);
   }
 
   useEffect(() => {
@@ -130,6 +138,16 @@ const Dashboard: React.FC = () => {
 
   return (
     <Container>
+      
+      {
+        isLoading ? 
+        (<LoadContainer>
+          <ActivityIndicator 
+          color={theme.colors.primary} 
+            size="large"
+          />
+       </LoadContainer>) :
+      <>
       <Header>
         <UserWrapper>
           <UserInfo>
@@ -155,19 +173,19 @@ const Dashboard: React.FC = () => {
           <HighlightCard
             title="Entradas"
             amount={highightData?.entries?.amount}
-            lastTransaction="Última entrada dia 13 de abril"
+            lastTransaction={highightData.entries.lastTransactions}
             icon="arrow-up-circle"
           />
            <HighlightCard
             title="Saídas"
             amount={highightData?.expensives?.amount}
-            lastTransaction="Última entrada dia 13 de abril"
-            icon="arrow-up-circle"
+            lastTransaction={highightData.expensives.lastTransactions}
+            icon="arrow-down-circle"
           />
           <HighlightCard
             title="Saídas"
             amount={highightData?.total?.amount}
-            lastTransaction="Última entrada dia 13 de abril"
+            lastTransaction={highightData?.total?.lastTransactions}
             icon="dollar-sign"
           />
       </HighlightCards>
@@ -180,6 +198,8 @@ const Dashboard: React.FC = () => {
           renderItem={({ item }) => <TransactionCard data={item} />}
         />
       </Transactions>
+      </>
+      }
     </Container>
   );
 };
