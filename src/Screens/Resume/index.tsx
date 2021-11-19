@@ -1,7 +1,10 @@
-import React, { useState, useCallback, useEffect} from 'react';
+import React, { useState, useCallback} from 'react';
+import {useFocusEffect} from "@react-navigation/native";
 import {useBottomTabBarHeight} from "@react-navigation/bottom-tabs";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { VictoryPie } from 'victory-native';
+import {ActivityIndicator} from "react-native";
+import { useTheme } from "styled-components";
 
 import HistoryCard from '../../components/HistoryCard';
 
@@ -17,7 +20,10 @@ import { Container,
     } from './styles';
 import { categories } from '../../utils/categories';
 import { RFValue } from 'react-native-responsive-fontsize';
-import { useFocusEffect } from '@react-navigation/core';
+
+import { addMonths, subMonths, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
 
 interface TransactionData {
    type: 'positive' | 'negative';
@@ -36,14 +42,36 @@ interface CategoryData {
 }
 
 const Resume: React.FC = () => {
+   const [isLoading, setIsLoading] = useState(false);
+
+   const [selectedDate, setSelectedDate] = useState(new Date);
+
    const [totalByCategories, setTotalByCategories] = useState<CategoryData[]>([]);
+   
+   const theme = useTheme();
+
+   function handleDateChange(action: 'next' | 'prev') {
+      
+      if (action === 'next') {
+         const newDate = addMonths(selectedDate, 1);
+         setSelectedDate(newDate);
+      } else {
+         const newDate = subMonths(selectedDate, 1);
+         setSelectedDate(newDate);
+      }
+   }
 
    async function loadData() {
+      setIsLoading(true);
       const dataKey = "@gofinances:transaction";
       const response = await AsyncStorage.getItem(dataKey);
       const responseFormated = response ? JSON.parse(response) : [];
 
-      const expensives = responseFormated.filter((expensive: TransactionData) => expensive.type === 'negative');
+      const expensives = responseFormated.filter((expensive: TransactionData) => 
+         expensive.type === 'negative' &&
+         new Date(expensive.date).getMonth() === selectedDate.getMonth() &&
+         new Date(expensive.date).getFullYear() === selectedDate.getFullYear()
+      );
 
       const expensivesTotal = expensives.reduce((acumullator: number, expensive: TransactionData) => {
          return acumullator + Number(expensive.amount);
@@ -78,15 +106,13 @@ const Resume: React.FC = () => {
       });
 
       setTotalByCategories(totalByCategory);
+      setIsLoading(false);
    }
 
-   useEffect(() => {
+   useFocusEffect(useCallback(() =>{
       loadData();
-   },[])
+   },[selectedDate]))
 
-   // useFocusEffect( useCallback(() =>{
-   //    loadData();
-   // },[]))
   return (
      <Container>
         <Header>
@@ -101,17 +127,26 @@ const Resume: React.FC = () => {
             }}
          >
             <MonthSelect>
-               <MonthSelectButton>
-                  <MonthSelectIcon name="chevron-left" />
+               <MonthSelectButton onPress={() => handleDateChange('prev')}>
+                  <MonthSelectIcon name="chevron-left"  />
                </MonthSelectButton>
 
-               <Month> Maio </Month>
+               <Month> {format(selectedDate, 'MMMM, yyyy', {locale: ptBR})} </Month>
 
-               <MonthSelectButton>
+               <MonthSelectButton onPress={() => handleDateChange('next')}>
                   <MonthSelectIcon name="chevron-right" />
                </MonthSelectButton>
             </MonthSelect>
 
+            {
+               isLoading ? (
+                  <ActivityIndicator 
+                  color={theme.colors.primary} 
+                    size="large"
+                  />
+                  
+               ) : (
+                  <>
             <ChartContainer>
                <VictoryPie
                   data={totalByCategories}
@@ -128,7 +163,12 @@ const Resume: React.FC = () => {
            totalByCategories.map((item, index) => (
             <HistoryCard title={item.name} amount={item.totalFormated} color={item.color} key={index} />
            ))
-        }
+         }
+                  </>
+               )
+            }
+
+
          </Content>
 
      </Container>
