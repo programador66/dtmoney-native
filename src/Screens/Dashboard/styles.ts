@@ -9,7 +9,7 @@ import {
 
 import { BorderlessButton } from "react-native-gesture-handler";
 
-import { DatalistProps } from ".";
+import { DataListProps } from ".";
 
 export const Container = styled.View`
   flex: 1;
@@ -91,7 +91,7 @@ export const Title = styled.Text`
 `;
 
 export const TransactionsList = styled(
-  FlatList as new () => FlatList<DatalistProps>
+  FlatList as new () => FlatList<DataListProps>
 ).attrs({
   showsVerticalScrollIndicator: false,
   contentContainerStyle: {
